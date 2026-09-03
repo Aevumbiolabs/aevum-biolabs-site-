@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from "react";
-import { FlaskConical, Instagram, Dna, MessageCircle, ShoppingBasket, X, Plus, Minus, Check } from "lucide-react";
+import React, { useState, useMemo, useEffect } from "react";
+import { FlaskConical, Instagram, Dna, MessageCircle, ShoppingBasket, X, Plus, Minus, Check, Truck, Tag } from "lucide-react";
 
 import retatrutideImg from "./assets/products/retatrutide.jpeg";
 import tesamorelinImg from "./assets/products/tesamorelin.jpeg";
@@ -14,13 +14,25 @@ import bacWaterImg from "./assets/products/bacwater.jpeg";
 import pt141Img from "./assets/products/pt141.jpeg";
 
 // ---------------------------------------------------------------------------
-// CONFIG
+// CONFIG — edit these values directly, no other code changes needed for
+// simple adjustments like phone number, shipping threshold, or codes.
 // ---------------------------------------------------------------------------
 
 const WHATSAPP_NUMBER = "18136484484"; // +1 (813) 648-4484, digits only for wa.me
+const INSTAGRAM_URL = "https://instagram.com/aevumbiolabs";
+const FREE_SHIPPING_THRESHOLD = 300;
 
-// Bulk discount tiers — applied by quantity of a given catalog item ordered.
-// Matches the printed price sheet: 3=5%, 5=10%, 10=15%, 20=20%, 50=30% off.
+// Discount codes — add/remove/edit entries here. "percent" is customer
+// discount off the order total. "active: false" disables a code without
+// deleting it. NOTE: usage counts, revenue, and commissions are NOT tracked
+// automatically — there's no database behind this site. Track that manually
+// from the WhatsApp messages (each order includes the code used), or this
+// becomes a "phase 2" feature once a real backend is set up.
+const DISCOUNT_CODES = {
+  WELCOME10: { percent: 10, active: true },
+};
+
+// Bulk discount tiers — applied by quantity of a single item in the basket.
 const TIERS = [
   { min: 50, rate: 0.30 },
   { min: 20, rate: 0.20 },
@@ -33,34 +45,13 @@ const TIERS = [
 function tierFor(qty) {
   return TIERS.find((t) => qty >= t.min) ?? TIERS[TIERS.length - 1];
 }
-
 function lineTotal(unitPrice, qty) {
   const { rate } = tierFor(qty);
   return Math.floor(unitPrice * qty * (1 - rate));
 }
 
-function buildOrderMessage(cart) {
-  const lines = cart.map((item) => {
-    const { rate } = tierFor(item.qty);
-    const total = lineTotal(item.price, item.qty);
-    const discountNote = rate > 0 ? ` (${Math.round(rate * 100)}% bulk discount applied)` : "";
-    return `• ${item.name} (${item.dose}) x${item.qty} — $${total}${discountNote}`;
-  });
-  const grandTotal = cart.reduce((s, i) => s + lineTotal(i.price, i.qty), 0);
-  return [
-    "Hi, I'd like to place an order:",
-    "",
-    ...lines,
-    "",
-    `Total: $${grandTotal}`,
-    "",
-    "Please send Zelle payment instructions — I'll include the order number in the memo.",
-  ].join("\n");
-}
-
 // ---------------------------------------------------------------------------
-// DATA — neutral chemistry facts only, full 16-product catalog with confirmed
-// single-vial pricing. Bulk tiers computed dynamically from unit price.
+// DATA
 // ---------------------------------------------------------------------------
 
 const PRODUCTS = [
@@ -102,7 +93,7 @@ function Logo() {
 }
 
 // ---------------------------------------------------------------------------
-// PRODUCT IMAGE — real photo, or a styled placeholder vial silhouette
+// PRODUCT IMAGE
 // ---------------------------------------------------------------------------
 
 function ProductImage({ p, className }) {
@@ -118,20 +109,38 @@ function ProductImage({ p, className }) {
 }
 
 // ---------------------------------------------------------------------------
-// PRODUCT CARD
+// FREE SHIPPING BANNER (site-wide, static reminder)
+// ---------------------------------------------------------------------------
+
+function ShippingBanner() {
+  return (
+    <div className="bg-[#D4AF6A] text-[#0A0806]">
+      <div className="max-w-6xl mx-auto px-4 py-2 flex items-center justify-center gap-2 font-mono text-[11px] tracking-[0.08em] uppercase">
+        <Truck size={13} />
+        Free shipping on orders over {fmt(FREE_SHIPPING_THRESHOLD)}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PRODUCT CARD — bigger image, quantity selector before Add to Basket
 // ---------------------------------------------------------------------------
 
 function ProductCard({ p, onAdd }) {
+  const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+
   const handleAdd = () => {
-    onAdd(p);
+    onAdd(p, qty);
     setAdded(true);
-    setTimeout(() => setAdded(false), 1100);
+    setQty(1);
+    setTimeout(() => setAdded(false), 1200);
   };
 
   return (
     <div className="border border-[#3A2F17] rounded-lg bg-gradient-to-b from-[#0F0C06] to-[#0A0806] overflow-hidden flex flex-col">
-      <ProductImage p={p} className="h-48 w-full object-contain p-4" />
+      <ProductImage p={p} className="h-72 w-full object-contain p-2" />
       <div className="p-5 flex flex-col flex-1">
         <div className="font-display text-lg text-[#F3E7CC] leading-tight mb-1">{p.name}</div>
         <span className="inline-block mb-3 font-mono text-[10px] tracking-[0.1em] text-[#0A0806] bg-[#D4AF6A] px-2 py-0.5 rounded w-fit">
@@ -142,19 +151,37 @@ function ProductCard({ p, onAdd }) {
             <li key={i} className="text-[12px] text-[#C9BFA3] leading-relaxed">{f}</li>
           ))}
         </ul>
-        <div className="flex items-center justify-between pt-3 border-t border-[#3A2F17]">
+
+        <div className="flex items-center justify-between mb-3">
           <div>
             <span className="font-display text-xl text-[#D4AF6A]">{fmt(p.price)}</span>
             <span className="font-mono text-[10px] text-[#6B5E42] ml-1">/ vial</span>
           </div>
-          <button
-            onClick={handleAdd}
-            className="flex items-center gap-1.5 font-mono text-[11px] tracking-[0.08em] uppercase border border-[#3A2F17] text-[#C9BFA3] px-3.5 py-2 rounded hover:border-[#D4AF6A] hover:text-[#D4AF6A] transition-colors"
-          >
-            {added ? <><Check size={13} /> Added</> : <><ShoppingBasket size={13} /> Add</>}
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setQty((q) => Math.max(1, q - 1))}
+              className="h-7 w-7 flex items-center justify-center border border-[#3A2F17] text-[#C9BFA3] hover:border-[#D4AF6A] hover:text-[#D4AF6A] rounded"
+            >
+              <Minus size={12} />
+            </button>
+            <span className="font-mono text-[13px] text-[#F3E7CC] w-5 text-center">{qty}</span>
+            <button
+              onClick={() => setQty((q) => q + 1)}
+              className="h-7 w-7 flex items-center justify-center border border-[#3A2F17] text-[#C9BFA3] hover:border-[#D4AF6A] hover:text-[#D4AF6A] rounded"
+            >
+              <Plus size={12} />
+            </button>
+          </div>
         </div>
-        <p className="font-mono text-[9.5px] text-[#6B5E42] mt-2">
+
+        <button
+          onClick={handleAdd}
+          className="w-full flex items-center justify-center gap-2 font-mono text-[11px] tracking-[0.08em] uppercase border border-[#3A2F17] text-[#C9BFA3] px-3.5 py-2.5 rounded hover:border-[#D4AF6A] hover:text-[#D4AF6A] transition-colors mb-2"
+        >
+          {added ? <><Check size={13} /> Added</> : <><ShoppingBasket size={13} /> Add to Basket</>}
+        </button>
+
+        <p className="font-mono text-[9.5px] text-[#6B5E42]">
           3+ save 5% · 5+ save 10% · 10+ save 15% · 20+ save 20% · 50+ save 30%
         </p>
       </div>
@@ -166,10 +193,11 @@ function ProductCard({ p, onAdd }) {
 // BASKET DRAWER
 // ---------------------------------------------------------------------------
 
-function BasketDrawer({ open, onClose, cart, onInc, onDec, onRemove }) {
-  const grandTotal = useMemo(() => cart.reduce((s, i) => s + lineTotal(i.price, i.qty), 0), [cart]);
-  const message = useMemo(() => buildOrderMessage(cart), [cart]);
-  const sendLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+function BasketDrawer({ open, onClose, cart, onInc, onDec, onRemove, onCheckout, discountCode, setDiscountCode, appliedDiscount, onApplyDiscount, discountError }) {
+  const subtotal = useMemo(() => cart.reduce((s, i) => s + lineTotal(i.price, i.qty), 0), [cart]);
+  const discountAmount = appliedDiscount ? Math.floor(subtotal * (appliedDiscount.percent / 100)) : 0;
+  const total = subtotal - discountAmount;
+  const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - total);
 
   return (
     <div className={`fixed inset-0 z-40 transition-opacity ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
@@ -182,11 +210,24 @@ function BasketDrawer({ open, onClose, cart, onInc, onDec, onRemove }) {
           <button onClick={onClose} className="text-[#8A7B5C] hover:text-[#F3E7CC]"><X size={18} /></button>
         </div>
 
+        {/* free shipping progress */}
+        <div className="px-5 py-3 border-b border-[#3A2F17] bg-[#12100A]">
+          {remainingForFreeShipping > 0 ? (
+            <p className="font-mono text-[11px] text-[#D4AF6A] flex items-center gap-1.5">
+              <Truck size={12} /> You're {fmt(remainingForFreeShipping)} away from free shipping.
+            </p>
+          ) : (
+            <p className="font-mono text-[11px] text-[#25D366] flex items-center gap-1.5">
+              <Check size={12} /> You've unlocked free shipping!
+            </p>
+          )}
+        </div>
+
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {cart.length === 0 && <p className="text-sm text-[#4A4028] font-mono">Basket is empty.</p>}
           {cart.map((item) => {
             const { rate } = tierFor(item.qty);
-            const total = lineTotal(item.price, item.qty);
+            const t = lineTotal(item.price, item.qty);
             return (
               <div key={item.id} className="flex gap-3 border-b border-[#3A2F17] pb-3">
                 <ProductImage p={item} className="h-14 w-14 object-contain rounded shrink-0" />
@@ -211,7 +252,7 @@ function BasketDrawer({ open, onClose, cart, onInc, onDec, onRemove }) {
                         <Plus size={11} />
                       </button>
                     </div>
-                    <span className="font-mono text-[12px] text-[#D4AF6A]">{fmt(total)}</span>
+                    <span className="font-mono text-[12px] text-[#D4AF6A]">{fmt(t)}</span>
                   </div>
                 </div>
               </div>
@@ -219,30 +260,154 @@ function BasketDrawer({ open, onClose, cart, onInc, onDec, onRemove }) {
           })}
         </div>
 
-        <div className="px-5 py-4 border-t border-[#3A2F17]">
-          <div className="flex justify-between mb-2">
-            <span className="font-mono text-xs uppercase tracking-[0.1em] text-[#8A7B5C]">Total</span>
-            <span className="font-display text-lg text-[#D4AF6A]">{fmt(grandTotal)}</span>
+        {/* discount code */}
+        <div className="px-5 py-3 border-t border-[#3A2F17]">
+          <div className="flex gap-2">
+            <div className="flex-1 flex items-center gap-2 border border-[#3A2F17] px-2.5">
+              <Tag size={12} className="text-[#6B5E42]" />
+              <input
+                value={discountCode}
+                onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                placeholder="Discount code"
+                className="w-full bg-transparent py-2 text-[12px] font-mono text-[#F3E7CC] placeholder:text-[#4A4028] focus:outline-none"
+              />
+            </div>
+            <button
+              onClick={onApplyDiscount}
+              className="font-mono text-[11px] uppercase tracking-[0.08em] border border-[#3A2F17] px-3 text-[#C9BFA3] hover:border-[#D4AF6A] hover:text-[#D4AF6A]"
+            >
+              Apply
+            </button>
           </div>
-          <p className="font-mono text-[10px] text-[#8A7B5C] leading-relaxed mb-4">
-            Bulk discounts apply automatically per item. Payment is handled via
-            Zelle after your order is confirmed on WhatsApp.
-          </p>
-          <a
-            href={cart.length === 0 ? undefined : sendLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-disabled={cart.length === 0}
-            onClick={(e) => { if (cart.length === 0) e.preventDefault(); }}
+          {discountError && <p className="font-mono text-[10.5px] text-[#E8896A] mt-1.5">{discountError}</p>}
+          {appliedDiscount && (
+            <p className="font-mono text-[10.5px] text-[#25D366] mt-1.5">
+              {appliedDiscount.percent}% discount applied
+            </p>
+          )}
+        </div>
+
+        <div className="px-5 py-4 border-t border-[#3A2F17]">
+          {appliedDiscount && (
+            <>
+              <div className="flex justify-between mb-1">
+                <span className="font-mono text-[11px] text-[#8A7B5C]">Subtotal</span>
+                <span className="font-mono text-[11px] text-[#8A7B5C]">{fmt(subtotal)}</span>
+              </div>
+              <div className="flex justify-between mb-1">
+                <span className="font-mono text-[11px] text-[#25D366]">Discount ({appliedDiscount.percent}%)</span>
+                <span className="font-mono text-[11px] text-[#25D366]">-{fmt(discountAmount)}</span>
+              </div>
+            </>
+          )}
+          <div className="flex justify-between mb-4">
+            <span className="font-mono text-xs uppercase tracking-[0.1em] text-[#8A7B5C]">Total</span>
+            <span className="font-display text-lg text-[#D4AF6A]">{fmt(total)}</span>
+          </div>
+          <button
+            disabled={cart.length === 0}
+            onClick={onCheckout}
             className={`w-full flex items-center justify-center gap-2 py-3 font-mono text-sm tracking-[0.1em] uppercase transition-colors ${
               cart.length === 0
-                ? "bg-[#1C1710] text-[#4A4028] cursor-not-allowed pointer-events-none"
-                : "bg-[#25D366] text-[#0A0806] hover:bg-[#2FE377]"
+                ? "bg-[#1C1710] text-[#4A4028] cursor-not-allowed"
+                : "bg-[#D4AF6A] text-[#0A0806] hover:bg-[#E5C685]"
             }`}
           >
-            <MessageCircle size={15} /> Send Order via WhatsApp
-          </a>
+            Checkout
+          </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CHECKOUT MODAL — collects full shipping details, then sends everything to
+// WhatsApp as one message (this is the "order record" since there's no
+// database/admin dashboard behind this site).
+// ---------------------------------------------------------------------------
+
+function CheckoutModal({ open, onClose, cart, subtotal, discountAmount, appliedDiscount, total, referral, onPlaced }) {
+  const [form, setForm] = useState({
+    firstName: "", lastName: "", email: "", phone: "",
+    address: "", apt: "", city: "", state: "", zip: "", country: "",
+  });
+
+  if (!open) return null;
+
+  const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - total);
+    const shippingLine = remainingForFreeShipping === 0 ? "FREE (order qualifies)" : "Standard (does not qualify for free shipping)";
+
+    const lines = cart.map((item) => {
+      const { rate } = tierFor(item.qty);
+      const t = lineTotal(item.price, item.qty);
+      const note = rate > 0 ? ` (${Math.round(rate * 100)}% bulk discount)` : "";
+      return `• ${item.name} (${item.dose}) x${item.qty} — $${t}${note}`;
+    });
+
+    const message = [
+      "Hi, I'd like to place an order:",
+      "",
+      ...lines,
+      "",
+      `Subtotal: $${subtotal}`,
+      appliedDiscount ? `Discount (${appliedDiscount.percent}% — code applied): -$${discountAmount}` : null,
+      `Total: $${total}`,
+      `Shipping: ${shippingLine}`,
+      referral ? `Referred by: ${referral}` : null,
+      "",
+      "Shipping to:",
+      `${form.firstName} ${form.lastName}`,
+      `${form.address}${form.apt ? ", " + form.apt : ""}`,
+      `${form.city}, ${form.state} ${form.zip}`,
+      form.country,
+      "",
+      `Email: ${form.email}`,
+      `Phone: ${form.phone}`,
+      "",
+      "Please send Zelle payment instructions — I'll include the order number in the memo.",
+    ].filter(Boolean).join("\n");
+
+    const link = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    window.open(link, "_blank");
+    onPlaced();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+      <div className="w-full max-w-md bg-[#0F0C06] border border-[#3A2F17] max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#3A2F17]">
+          <span className="font-mono text-xs tracking-[0.15em] uppercase text-[#C9BFA3]">Checkout</span>
+          <button onClick={onClose} className="text-[#8A7B5C] hover:text-[#F3E7CC]"><X size={18} /></button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <input required placeholder="First name" value={form.firstName} onChange={set("firstName")} className="bg-[#1C1710] border border-[#3A2F17] text-sm text-[#F3E7CC] px-3 py-2.5 placeholder:text-[#4A4028] focus:outline-none focus:border-[#D4AF6A]" />
+            <input required placeholder="Last name" value={form.lastName} onChange={set("lastName")} className="bg-[#1C1710] border border-[#3A2F17] text-sm text-[#F3E7CC] px-3 py-2.5 placeholder:text-[#4A4028] focus:outline-none focus:border-[#D4AF6A]" />
+          </div>
+          <input required type="email" placeholder="Email" value={form.email} onChange={set("email")} className="w-full bg-[#1C1710] border border-[#3A2F17] text-sm text-[#F3E7CC] px-3 py-2.5 placeholder:text-[#4A4028] focus:outline-none focus:border-[#D4AF6A]" />
+          <input required type="tel" placeholder="Phone number" value={form.phone} onChange={set("phone")} className="w-full bg-[#1C1710] border border-[#3A2F17] text-sm text-[#F3E7CC] px-3 py-2.5 placeholder:text-[#4A4028] focus:outline-none focus:border-[#D4AF6A]" />
+          <input required placeholder="Shipping address" value={form.address} onChange={set("address")} className="w-full bg-[#1C1710] border border-[#3A2F17] text-sm text-[#F3E7CC] px-3 py-2.5 placeholder:text-[#4A4028] focus:outline-none focus:border-[#D4AF6A]" />
+          <input placeholder="Apartment / unit (optional)" value={form.apt} onChange={set("apt")} className="w-full bg-[#1C1710] border border-[#3A2F17] text-sm text-[#F3E7CC] px-3 py-2.5 placeholder:text-[#4A4028] focus:outline-none focus:border-[#D4AF6A]" />
+          <div className="grid grid-cols-3 gap-3">
+            <input required placeholder="City" value={form.city} onChange={set("city")} className="bg-[#1C1710] border border-[#3A2F17] text-sm text-[#F3E7CC] px-3 py-2.5 placeholder:text-[#4A4028] focus:outline-none focus:border-[#D4AF6A]" />
+            <input required placeholder="State" value={form.state} onChange={set("state")} className="bg-[#1C1710] border border-[#3A2F17] text-sm text-[#F3E7CC] px-3 py-2.5 placeholder:text-[#4A4028] focus:outline-none focus:border-[#D4AF6A]" />
+            <input required placeholder="ZIP" value={form.zip} onChange={set("zip")} className="bg-[#1C1710] border border-[#3A2F17] text-sm text-[#F3E7CC] px-3 py-2.5 placeholder:text-[#4A4028] focus:outline-none focus:border-[#D4AF6A]" />
+          </div>
+          <input required placeholder="Country" value={form.country} onChange={set("country")} className="w-full bg-[#1C1710] border border-[#3A2F17] text-sm text-[#F3E7CC] px-3 py-2.5 placeholder:text-[#4A4028] focus:outline-none focus:border-[#D4AF6A]" />
+
+          <div className="flex justify-between items-center pt-3 border-t border-[#3A2F17]">
+            <span className="font-display text-base text-[#D4AF6A]">{fmt(total)}</span>
+            <button type="submit" className="flex items-center gap-2 px-5 py-2.5 font-mono text-xs tracking-[0.1em] uppercase bg-[#25D366] text-[#0A0806] hover:bg-[#2FE377]">
+              <MessageCircle size={14} /> Send via WhatsApp
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
@@ -255,12 +420,26 @@ function BasketDrawer({ open, onClose, cart, onInc, onDec, onRemove }) {
 export default function App() {
   const [cart, setCart] = useState([]);
   const [basketOpen, setBasketOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [discountCode, setDiscountCode] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState(null);
+  const [discountError, setDiscountError] = useState("");
+  const [referral, setReferral] = useState(null);
 
-  const addToCart = (product) => {
+  // Capture ?ref=alex from the URL on load, for manual affiliate attribution
+  // (included in the WhatsApp order message — there's no automatic tracking
+  // without a backend).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) setReferral(ref);
+  }, []);
+
+  const addToCart = (product, qty = 1) => {
     setCart((prev) => {
       const existing = prev.find((i) => i.id === product.id);
-      if (existing) return prev.map((i) => (i.id === product.id ? { ...i, qty: i.qty + 1 } : i));
-      return [...prev, { ...product, qty: 1 }];
+      if (existing) return prev.map((i) => (i.id === product.id ? { ...i, qty: i.qty + qty } : i));
+      return [...prev, { ...product, qty }];
     });
   };
   const inc = (id) => setCart((prev) => prev.map((i) => (i.id === id ? { ...i, qty: i.qty + 1 } : i)));
@@ -268,79 +447,114 @@ export default function App() {
   const remove = (id) => setCart((prev) => prev.filter((i) => i.id !== id));
   const itemCount = cart.reduce((n, i) => n + i.qty, 0);
 
+  const subtotal = useMemo(() => cart.reduce((s, i) => s + lineTotal(i.price, i.qty), 0), [cart]);
+  const discountAmount = appliedDiscount ? Math.floor(subtotal * (appliedDiscount.percent / 100)) : 0;
+  const total = subtotal - discountAmount;
+
+  const applyDiscount = () => {
+    setDiscountError("");
+    const code = DISCOUNT_CODES[discountCode.trim().toUpperCase()];
+    if (!discountCode.trim()) return;
+    if (code && code.active) {
+      setAppliedDiscount(code);
+    } else {
+      setAppliedDiscount(null);
+      setDiscountError("Invalid or inactive code.");
+    }
+  };
+
+  const handlePlaced = () => {
+    setCart([]);
+    setAppliedDiscount(null);
+    setDiscountCode("");
+    setCheckoutOpen(false);
+  };
+
   return (
-    <div className="min-h-screen bg-[#0A0806] text-[#F3E7CC] px-4 sm:px-8 py-14">
+    <div className="min-h-screen bg-[#0A0806] text-[#F3E7CC]">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
         .font-display { font-family: 'Cinzel', serif; }
         .font-mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
       `}</style>
 
-      {/* floating basket button */}
-      <button
-        onClick={() => setBasketOpen(true)}
-        className="fixed top-5 right-5 z-30 flex items-center gap-2 border border-[#3A2F17] bg-[#0F0C06] px-3.5 py-2.5 rounded-full hover:border-[#D4AF6A] transition-colors shadow-lg"
-      >
-        <ShoppingBasket size={16} className="text-[#D4AF6A]" />
-        <span className="font-mono text-[12px] text-[#F3E7CC]">{itemCount}</span>
-      </button>
+      <ShippingBanner />
 
-      {/* header */}
-      <div className="flex flex-col items-center text-center mb-10">
-        <Logo />
-        <h1 className="font-display text-4xl sm:text-5xl tracking-wide text-[#D4AF6A] mt-10 mb-2">
-          Peptide Collection
-        </h1>
-        <div className="flex items-center gap-4 text-[11px] font-mono tracking-[0.3em] text-[#8A7B5C] mb-4">
-          <span className="h-px w-10 bg-[#3A2F17]" />
-          RESEARCH COMPOUNDS
-          <span className="h-px w-10 bg-[#3A2F17]" />
+      <div className="px-4 sm:px-8 py-10">
+        {/* floating basket button */}
+        <button
+          onClick={() => setBasketOpen(true)}
+          className="fixed top-5 right-5 z-30 flex items-center gap-2 border border-[#3A2F17] bg-[#0F0C06] px-3.5 py-2.5 rounded-full hover:border-[#D4AF6A] transition-colors shadow-lg"
+        >
+          <ShoppingBasket size={16} className="text-[#D4AF6A]" />
+          <span className="font-mono text-[12px] text-[#F3E7CC]">{itemCount}</span>
+        </button>
+
+        {/* header */}
+        <div className="flex flex-col items-center text-center mb-10">
+          <Logo />
+          <h1 className="font-display text-4xl sm:text-5xl tracking-wide text-[#D4AF6A] mt-10 mb-2">
+            Peptide Collection
+          </h1>
+          <div className="flex items-center gap-4 text-[11px] font-mono tracking-[0.3em] text-[#8A7B5C] mb-4">
+            <span className="h-px w-10 bg-[#3A2F17]" />
+            RESEARCH COMPOUNDS
+            <span className="h-px w-10 bg-[#3A2F17]" />
+          </div>
+          <p className="font-mono text-[11.5px] text-[#8A7B5C] max-w-md leading-relaxed">
+            Choose a quantity, add to your basket — bulk discounts apply
+            automatically at 3, 5, 10, 20, and 50+ vials. Checkout to send
+            your order and shipping details to us on WhatsApp in one message.
+          </p>
+          {referral && (
+            <p className="font-mono text-[10.5px] text-[#D4AF6A] mt-3">Referred by: {referral}</p>
+          )}
         </div>
-        <p className="font-mono text-[11.5px] text-[#8A7B5C] max-w-md leading-relaxed">
-          Add items to your basket — bulk discounts apply automatically at 3,
-          5, 10, 20, and 50+ vials. Send your order to us on WhatsApp in one
-          message and we'll send Zelle payment instructions.
-        </p>
-      </div>
 
-      {/* catalog grid */}
-      <div className="max-w-6xl mx-auto grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {PRODUCTS.map((p) => (
-          <ProductCard key={p.id} p={p} onAdd={addToCart} />
-        ))}
-      </div>
-
-      {/* payment notice */}
-      <div className="max-w-3xl mx-auto mt-10 border border-[#3A2F17] rounded-lg px-6 py-6 text-center">
-        <div className="font-display text-base text-[#D4AF6A] mb-2">
-          Secure Payment via Zelle
+        {/* catalog grid */}
+        <div className="max-w-6xl mx-auto grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {PRODUCTS.map((p) => (
+            <ProductCard key={p.id} p={p} onAdd={addToCart} />
+          ))}
         </div>
-        <p className="font-mono text-[11.5px] text-[#8A7B5C] leading-relaxed max-w-lg mx-auto">
-          To keep our pricing competitive and avoid unnecessary processing fees,
-          we currently accept Zelle as our preferred payment method. Once your
-          order is submitted, payment instructions will be provided to complete
-          your purchase securely and efficiently. Please include your order
-          number in the payment memo to ensure accurate processing.
-        </p>
-        <p className="font-mono text-[11px] text-[#D4AF6A] mt-3">
-          Thank you for choosing Aevum BioLabs.
-        </p>
-      </div>
 
-      {/* footer */}
-      <div className="max-w-3xl mx-auto mt-4 border border-[#3A2F17] rounded-lg px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <FlaskConical size={20} className="text-[#D4AF6A]" />
-          <div className="font-mono text-[11px] tracking-[0.15em] text-[#D4AF6A]">FOR RESEARCH USE ONLY</div>
+        {/* payment notice */}
+        <div className="max-w-3xl mx-auto mt-10 border border-[#3A2F17] rounded-lg px-6 py-6 text-center">
+          <div className="font-display text-base text-[#D4AF6A] mb-2">
+            Secure Payment via Zelle
+          </div>
+          <p className="font-mono text-[11.5px] text-[#8A7B5C] leading-relaxed max-w-lg mx-auto">
+            To keep our pricing competitive and avoid unnecessary processing fees,
+            we currently accept Zelle as our preferred payment method. Once your
+            order is submitted, payment instructions will be provided to complete
+            your purchase securely and efficiently. Please include your order
+            number in the payment memo to ensure accurate processing.
+          </p>
+          <p className="font-mono text-[11px] text-[#D4AF6A] mt-3">
+            Thank you for choosing Aevum BioLabs.
+          </p>
         </div>
-        <p className="font-mono text-[10.5px] text-[#8A7B5C] leading-relaxed text-center sm:text-left max-w-md">
-          These products are intended for laboratory research purposes only.
-          Not intended for human consumption. Not for use in humans. Keep out
-          of reach of children. By ordering, you confirm you are 18+ and
-          purchasing solely for laboratory research.
-        </p>
-        <div className="flex items-center gap-2 font-mono text-[11px] text-[#D4AF6A]">
-          <Instagram size={15} /> @AEVUMBIOLABS
+
+        {/* footer */}
+        <div className="max-w-3xl mx-auto mt-4 border border-[#3A2F17] rounded-lg px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <FlaskConical size={20} className="text-[#D4AF6A]" />
+            <div className="font-mono text-[11px] tracking-[0.15em] text-[#D4AF6A]">FOR RESEARCH USE ONLY</div>
+          </div>
+          <p className="font-mono text-[10.5px] text-[#8A7B5C] leading-relaxed text-center sm:text-left max-w-md">
+            These products are intended for laboratory research purposes only.
+            Not intended for human consumption. Not for use in humans. Keep out
+            of reach of children. By ordering, you confirm you are 18+ and
+            purchasing solely for laboratory research.
+          </p>
+          <a
+            href={INSTAGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 font-mono text-[11px] text-[#D4AF6A] hover:text-[#E5C685] transition-colors"
+          >
+            <Instagram size={15} /> @AEVUMBIOLABS
+          </a>
         </div>
       </div>
 
@@ -351,6 +565,23 @@ export default function App() {
         onInc={inc}
         onDec={dec}
         onRemove={remove}
+        onCheckout={() => { setBasketOpen(false); setCheckoutOpen(true); }}
+        discountCode={discountCode}
+        setDiscountCode={setDiscountCode}
+        appliedDiscount={appliedDiscount}
+        onApplyDiscount={applyDiscount}
+        discountError={discountError}
+      />
+      <CheckoutModal
+        open={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+        cart={cart}
+        subtotal={subtotal}
+        discountAmount={discountAmount}
+        appliedDiscount={appliedDiscount}
+        total={total}
+        referral={referral}
+        onPlaced={handlePlaced}
       />
     </div>
   );

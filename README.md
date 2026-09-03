@@ -1,74 +1,80 @@
 # Aevum Biolabs — Site
 
-This is a ready-to-deploy React + Vite project for the Aevum Biolabs peptide
-menu page. Orders route to WhatsApp as a single combined basket message —
-there is no cart or payment processing in this site (payment is handled via
-Zelle after order confirmation on WhatsApp).
+Ready-to-deploy React + Vite site for the Aevum Biolabs peptide menu.
+Checkout collects full shipping info, then sends everything to WhatsApp as
+one message — there is no cart/payment processing or database in this site
+(payment is handled via Zelle after order confirmation on WhatsApp).
 
 ## Deploy it (no coding required)
 
 1. **Create a GitHub account** at github.com if you don't have one.
-2. **Create a new repository** (e.g. `aevum-biolabs-site`) — keep it Private
-   if you'd rather the source code not be public.
-3. **Upload these files**: on the repo page, click "Add file" → "Upload
-   files", then drag this entire folder in. Commit the upload.
-4. **Create a Vercel account** at vercel.com, signing up with your GitHub
-   account (it'll ask to connect).
-5. In Vercel, click **Add New Project**, pick the `aevum-biolabs-site` repo,
-   leave all settings as default (Vercel auto-detects Vite), and click
-   **Deploy**.
-6. In about a minute you'll get a live link like
-   `aevum-biolabs-site.vercel.app` — that's your site, live on the internet.
+2. **Create a new repository** (e.g. `aevum-biolabs-site`).
+3. **Upload these files**: "Add file" → "Upload files", drag this whole
+   folder in, commit.
+4. **Create a Vercel account** at vercel.com, signing up with GitHub.
+5. In Vercel: **Add New Project** → pick the repo → leave defaults → **Deploy**.
+6. You'll get a live link like `aevum-biolabs-site.vercel.app`.
 
-## What's included
+## What's in this version
 
-- All 16 products from the price sheet, with real vial photography for 11 of
-  them (in `src/assets/products/`) — the other 5 (BPC-157 alone, TB-500 alone,
-  Ipamorelin alone, SS31, B12) show a "Photo coming soon" placeholder until
-  real photos are added
-- **Automatic bulk discounts**: 3+ vials of an item = 5% off, 5+ = 10%, 10+ =
-  15%, 20+ = 20%, 50+ = 30%. This is computed live in the basket from each
-  product's single-vial price — it closely matches the original printed price
-  sheet but isn't guaranteed to match every single cell to the penny (the
-  sheet's numbers were rounded by hand per cell). Since your friend confirms
-  every order manually on WhatsApp before Zelle payment, this is fine as a
-  live estimate rather than a final invoice.
-- "Add to Basket" on each product, a floating basket icon with quantity
-  controls, and a "Send Order via WhatsApp" button that opens WhatsApp with
-  the full order (items, quantities, discounted totals) pre-filled as one
-  message
-- Zelle payment notice section
-- RUO / research-use disclaimers throughout
+- **All 16 products**, 11 with real photos (auto-cropped and standardized so
+  every vial fills the frame consistently), 5 showing a "Photo coming soon"
+  placeholder until real photos exist: BPC-157 (alone), TB-500 (alone),
+  Ipamorelin (alone), SS31, B12
+- **Quantity selector on every product card** — pick a quantity before
+  clicking Add to Basket, no need to go into the basket first
+- **Automatic bulk discounts** (3+ = 5%, 5+ = 10%, 10+ = 15%, 20+ = 20%,
+  50+ = 30%), shown per line item
+- **Free shipping banner** at the top of the site, plus a dynamic message in
+  the basket ("You're $X away from free shipping" / "You've unlocked free
+  shipping!")
+- **Full checkout form**: first/last name, email, phone, address, apartment/
+  unit, city, state, ZIP, country. All of it gets included in the WhatsApp
+  message your friend receives — that message *is* the order record, since
+  there's no database or admin dashboard behind this site (see note below)
+- **Discount codes**: a simple list of codes in the code itself (see below),
+  applies a % off the order total, included in the WhatsApp message
+- **Referral links**: a link like `yoursite.vercel.app/?ref=alex` gets
+  captured and included in the WhatsApp order message so you can credit that
+  sale to Alex manually
+- **Clickable Instagram** link in the footer, opens in a new tab
+
+## Important limitation: no backend
+
+This is a static site — nothing is stored on a server. That means:
+
+- There's **no admin dashboard** showing past orders. WhatsApp is the order
+  record; each message has everything needed to ship.
+- Discount code usage, revenue generated, and affiliate commissions are
+  **not tracked automatically**. If you want that, you'd need a real backend
+  and database (e.g. Supabase or Firebase) plus an admin dashboard built on
+  top of it — a bigger project requiring you to create and pay for those
+  services. Happy to help scope that out whenever you're ready.
+- There's **no affiliate registration/login system** for the same reason —
+  that needs user accounts, which needs a backend with authentication.
+
+## Editing settings
+
+Open `src/App.jsx` — the top of the file has a `CONFIG` section:
+
+- `WHATSAPP_NUMBER` — the number orders go to
+- `INSTAGRAM_URL` — where the Instagram link points
+- `FREE_SHIPPING_THRESHOLD` — currently 300
+- `DISCOUNT_CODES` — add a line like `SARAH15: { percent: 15, active: true }`
+  to create a new code, or set `active: false` to disable one without
+  deleting it
+- `TIERS` — the bulk discount thresholds/rates
+
+After editing, commit the change on GitHub — Vercel redeploys automatically.
 
 ## Adding real photos for the placeholder products
 
-BPC-157 (alone), TB-500 (alone), Ipamorelin (alone), SS31, and B12 currently
-show a placeholder. To add a real photo:
-
 1. Drop the photo into `src/assets/products/`
 2. In `src/App.jsx`, import it near the top (see the existing `import ... Img`
-   lines) and set that product's `img` field in the `PRODUCTS` array to it
-   (it's currently set to `null` for these five).
+   lines) and set that product's `img` field in the `PRODUCTS` array (it's
+   currently `null` for the five without photos).
 
-## Changing bulk discount tiers or thresholds
-
-In `src/App.jsx`, edit the `TIERS` array near the top — each entry is a
-`{ min, rate }` pair (minimum quantity, discount rate).
-
-## Changing the WhatsApp number or existing products
-
-- WhatsApp number: open `src/App.jsx`, find `WHATSAPP_NUMBER` near the top.
-- Products/prices: same file, edit the `PRODUCTS` array.
-- After editing, commit the change on GitHub — Vercel redeploys automatically
-  within a minute or two.
-
-## Custom domain (optional)
-
-Buy a domain (Namecheap, Google Domains, ~$10–15/year), then in your Vercel
-project go to **Settings → Domains**, add it, and follow the DNS
-instructions Vercel shows you.
-
-## Local development (only if you want to run it on your own computer)
+## Local development
 
 ```
 npm install
