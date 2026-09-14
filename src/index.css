@@ -4,6 +4,7 @@
 
 body {
   margin: 0;
+background-color: #0A0E1A;
 }
 body::before {
   content: "";
@@ -11,8 +12,8 @@ body::before {
   inset: 0;
   background-image: url("./assets/products/watermark-icon.png");
   background-repeat: repeat;
-  background-size: 180px 180px;
-  opacity: 0.06;
+  background-size:260px 260px;
+  opacity: 0.12;
   pointer-events: none;
   z-index:9999;
 }
