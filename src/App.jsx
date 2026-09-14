@@ -12,6 +12,11 @@ import nadImg from "./assets/products/nad.jpeg";
 import motscImg from "./assets/products/motsc.jpeg";
 import bacWaterImg from "./assets/products/bacwater.jpeg";
 import pt141Img from "./assets/products/pt141.jpeg";
+import bpc157Img from "./assets/products/bpc157.png";
+import tb500Img from "./assets/products/tb500.png";
+import ipamorelinImg from "./assets/products/ipamorelin.png";
+import ss31Img from "./assets/products/ss31.png";
+import b12Img from "./assets/products/b12.png";
 
 // ---------------------------------------------------------------------------
 // CONFIG — edit these values directly, no other code changes needed for
@@ -58,18 +63,18 @@ const PRODUCTS = [
   { id: "reta", name: "Retatrutide", dose: "10MG", img: retatrutideImg, facts: ["GIP / GLP-1 / glucagon receptor triagonist"], price: 130 },
   { id: "tesa", name: "Tesamorelin", dose: "10MG", img: tesamorelinImg, facts: ["GHRH analog peptide"], price: 85 },
   { id: "wolverine", name: "BPC-157 + TB-500", dose: "5MG + 5MG", img: wolverineImg, facts: ["BPC-157 5mg + TB-500 5mg combination"], price: 95 },
-  { id: "bpc157", name: "BPC-157", dose: "5MG", img: null, facts: ["Gastric pentadecapeptide fragment"], price: 75 },
-  { id: "tb500", name: "TB-500", dose: "5MG", img: null, facts: ["Synthetic Thymosin β4 fragment"], price: 90 },
+  { id: "bpc157", name: "BPC-157", dose: "5MG", img: bpc157Img, facts: ["Gastric pentadecapeptide fragment"], price: 75 },
+  { id: "tb500", name: "TB-500", dose: "5MG", img: tb500Img, facts: ["Synthetic Thymosin β4 fragment"], price: 90 },
   { id: "ghkcu", name: "GHK-Cu", dose: "50MG", img: ghkCuImg, facts: ["Copper(II)-binding tripeptide"], price: 65 },
   { id: "cjcipa", name: "CJC-1295 + Ipamorelin", dose: "10MG TOTAL", img: cjcIpaImg, facts: ["CJC-1295 (no DAC) + Ipamorelin combination"], price: 70 },
   { id: "selank", name: "Selank", dose: "11MG", img: selankImg, facts: ["Synthetic tuftsin-analog heptapeptide"], price: 47 },
   { id: "mt2", name: "MT-2 (Melanotan II)", dose: "10MG", img: mt2Img, facts: ["Melanocortin receptor (MC1R/MC4R) ligand"], price: 36 },
   { id: "motsc", name: "MOTS-C", dose: "10MG", img: motscImg, facts: ["Mitochondrial-derived peptide"], price: 70 },
   { id: "nad", name: "NAD+", dose: "100MG", img: nadImg, facts: ["Nicotinamide adenine dinucleotide"], price: 80 },
-  { id: "ipa", name: "Ipamorelin", dose: "10MG", img: null, facts: ["Pentapeptide ghrelin-receptor ligand"], price: 85 },
-  { id: "ss31", name: "SS31", dose: "10MG", img: null, facts: ["Mitochondria-targeted tetrapeptide"], price: 75 },
+  { id: "ipa", name: "Ipamorelin", dose: "10MG", img: ipamorelinImg, facts: ["Pentapeptide ghrelin-receptor ligand"], price: 85 },
+  { id: "ss31", name: "SS31", dose: "10MG", img: ss31Img, facts: ["Mitochondria-targeted tetrapeptide"], price: 75 },
   { id: "bacwater", name: "BAC Water", dose: "10ML", img: bacWaterImg, facts: ["Bacteriostatic water for reconstitution"], price: 25 },
-  { id: "b12", name: "B12", dose: "10MG", img: null, facts: ["Cyanocobalamin"], price: 80 },
+  { id: "b12", name: "B12", dose: "10MG", img: b12Img, facts: ["Cyanocobalamin"], price: 80 },
   { id: "pt141", name: "PT-141", dose: "10MG", img: pt141Img, facts: ["Bremelanotide, melanocortin receptor agonist"], price: 70 },
 ];
 
