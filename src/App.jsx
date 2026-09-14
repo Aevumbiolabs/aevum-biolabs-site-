@@ -17,7 +17,7 @@ import tb500Img from "./assets/products/tb500.png";
 import ipamorelinImg from "./assets/products/ipamorelin.png";
 import ss31Img from "./assets/products/ss31.png";
 import b12Img from "./assets/products/b12.png";
-import logoImg from './assets/logo-header.png';
+import logoImg from './assets/logo-header-notagline.png';
 // CONFIG — edit these values directly, no other code changes needed for
 // simple adjustments like phone number, shipping threshold, or codes.
 // ---------------------------------------------------------------------------
@@ -83,10 +83,13 @@ const fmt = (n) => `$${n}`;
 // LOGO
 // ---------------------------------------------------------------------------
 
- function Logo() {
+ function Logo()  {
   return (
     <div className="flex flex-col items-center">
       <img src={logoImg} alt="Aevum Biolabs" className="w-64 md:w-80" />
+      <div className="font-mono text-[11px] tracking-[0.3em] text-[#D4AF6A] mt-3">
+        SCIENCE &nbsp;·&nbsp; PRECISION &nbsp;·&nbsp; ETERNITY
+      </div>
     </div>
   );
 }
