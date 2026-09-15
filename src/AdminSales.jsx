@@ -69,6 +69,11 @@ export default function AdminSales() {
     if (data) setRecentSales(data);
   }
 
+  function formatDate(dateStr) {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
   function affiliateName(id) {
     const a = affiliates.find((x) => x.id === id);
     return a ? `${a.full_name} (${a.referral_code})` : id;
@@ -280,7 +285,7 @@ export default function AdminSales() {
               >
                 <div>
                   <div className="text-sm text-[#F3E7CC]">{affiliateName(s.affiliate_id)}</div>
-                  <div className="font-mono text-[10px] text-[#6B5E42]">{s.sale_date}</div>
+                  <div className="font-mono text-[10px] text-[#6B5E42]">{formatDate(s.sale_date)}</div>
                 </div>
                 <div className="font-mono text-sm text-[#D4AF6A]">
                   ${Number(s.subtotal).toFixed(2)}
