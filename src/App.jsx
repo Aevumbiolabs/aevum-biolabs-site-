@@ -19,6 +19,7 @@ import ss31Img from "./assets/products/ss31.png";
 import b12Img from "./assets/products/b12.png";
 import logoImg from './assets/logo-header-notagline.png';
 import AffiliatePortal from './AffiliatePortal';
+import AdminSales from './AdminSales';
 // CONFIG — edit these values directly, no other code changes needed for
 // simple adjustments like phone number, shipping threshold, or codes.
 // ---------------------------------------------------------------------------
@@ -423,6 +424,9 @@ function CheckoutModal({ open, onClose, cart, subtotal, discountAmount, appliedD
 export default function App() {
     if (window.location.pathname === '/affiliate') {
     return <AffiliatePortal />;
+  }
+    if (window.location.pathname === '/admin') {
+    return <AdminSales />;
   }
   const [cart, setCart] = useState([]);
   const [basketOpen, setBasketOpen] = useState(false);
