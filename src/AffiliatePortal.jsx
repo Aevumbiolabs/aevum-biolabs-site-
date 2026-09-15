@@ -99,4 +99,61 @@ export default function AffiliatePortal() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0E1A] flex
+    <div className="min-h-screen bg-[#0A0E1A] flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-[#0F0C06] border border-[#3A2F17] rounded-lg p-8">
+        <div className="text-center mb-8">
+          <div className="font-display text-2xl tracking-[0.2em] text-[#F3E7CC]">AEVUM</div>
+          <div className="font-mono text-[10px] tracking-[0.3em] text-[#D4AF6A] mt-1">
+            AFFILIATE PORTAL
+          </div>
+        </div>
+
+        <div className="flex mb-6 border border-[#3A2F17] rounded-md overflow-hidden">
+          <button
+            onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
+            className={`flex-1 py-2 text-sm font-mono tracking-wide ${mode === 'login' ? 'bg-[#D4AF6A] text-[#0A0E1A]' : 'text-[#C9A24A]'}`}
+          >
+            LOG IN
+          </button>
+          <button
+            onClick={() => { setMode('signup'); setError(''); setSuccess(''); }}
+            className={`flex-1 py-2 text-sm font-mono tracking-wide ${mode === 'signup' ? 'bg-[#D4AF6A] text-[#0A0E1A]' : 'text-[#C9A24A]'}`}
+          >
+            SIGN UP
+          </button>
+        </div>
+
+        {error && (
+          <div className="mb-4 text-sm text-red-400 bg-red-900/20 border border-red-900/40 rounded p-3">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="mb-4 text-sm text-green-400 bg-green-900/20 border border-green-900/40 rounded p-3">
+            {success}
+          </div>
+        )}
+
+        {mode === 'signup' ? (
+          <form onSubmit={handleSignup} className="space-y-4">
+            <input type="text" placeholder="Full name" required value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full bg-[#1A140A] border border-[#3A2F17] rounded px-4 py-2 text-[#F3E7CC] placeholder-[#8A7B5C]" />
+            <input type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#1A140A] border border-[#3A2F17] rounded px-4 py-2 text-[#F3E7CC] placeholder-[#8A7B5C]" />
+            <input type="password" placeholder="Password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#1A140A] border border-[#3A2F17] rounded px-4 py-2 text-[#F3E7CC] placeholder-[#8A7B5C]" />
+            <input type="text" placeholder="Referral code (optional)" value={sponsorCode} onChange={(e) => setSponsorCode(e.target.value)} className="w-full bg-[#1A140A] border border-[#3A2F17] rounded px-4 py-2 text-[#F3E7CC] placeholder-[#8A7B5C]" />
+            <button type="submit" disabled={loading} className="w-full bg-[#D4AF6A] text-[#0A0E1A] font-mono tracking-wide py-2 rounded disabled:opacity-50">
+              {loading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleLogin} className="space-y-4">
+            <input type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#1A140A] border border-[#3A2F17] rounded px-4 py-2 text-[#F3E7CC] placeholder-[#8A7B5C]" />
+            <input type="password" placeholder="Password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-[#1A140A] border border-[#3A2F17] rounded px-4 py-2 text-[#F3E7CC] placeholder-[#8A7B5C]" />
+            <button type="submit" disabled={loading} className="w-full bg-[#D4AF6A] text-[#0A0E1A] font-mono tracking-wide py-2 rounded disabled:opacity-50">
+              {loading ? 'LOGGING IN...' : 'LOG IN'}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
