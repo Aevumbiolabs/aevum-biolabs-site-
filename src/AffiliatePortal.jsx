@@ -23,6 +23,12 @@ export default function AffiliatePortal() {
 
   useEffect(() => {
     checkExistingSession();
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      setSponsorCode(ref.toUpperCase());
+      setMode('signup');
+    }
   }, []);
 
   async function checkExistingSession() {
