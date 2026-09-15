@@ -8,6 +8,7 @@ export default function AdminSales() {
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [notLoggedIn, setNotLoggedIn] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('');
 
   const [affiliates, setAffiliates] = useState([]);
   const [recentSales, setRecentSales] = useState([]);
@@ -44,6 +45,7 @@ export default function AdminSales() {
       return;
     }
 
+    setAdminEmail(session.user.email || '');
     setAuthorized(true);
     setCheckingAccess(false);
     loadAffiliates();
@@ -61,8 +63,8 @@ export default function AdminSales() {
   async function loadRecentSales() {
     const { data } = await supabase
       .from('sales')
-      .select('id, amount, sale_date, created_at, affiliate_id')
-      .order('created_at', { ascending: false })
+      .select('id, subtotal, sale_date, created_by, affiliate_id')
+      .order('sale_date', { ascending: false })
       .limit(20);
     if (data) setRecentSales(data);
   }
@@ -95,8 +97,9 @@ export default function AdminSales() {
         .from('sales')
         .insert({
           affiliate_id: affiliateId,
-          amount: numericAmount,
+          subtotal: numericAmount,
           sale_date: saleDate,
+          created_by: adminEmail,
         })
         .select()
         .single();
@@ -112,8 +115,9 @@ export default function AdminSales() {
       const { error: personalErr } = await supabase.from('commissions').insert({
         affiliate_id: affiliateId,
         sale_id: saleRow.id,
+        role: 'personal',
+        rate: PERSONAL_RATE,
         amount: personalCommission,
-        type: 'personal',
         status: 'pending',
       });
 
@@ -130,8 +134,9 @@ export default function AdminSales() {
         const { error: overrideErr } = await supabase.from('commissions').insert({
           affiliate_id: soldByAffiliate.sponsor_id,
           sale_id: saleRow.id,
+          role: 'override',
+          rate: OVERRIDE_RATE,
           amount: overrideCommission,
-          type: 'override',
           status: 'pending',
         });
 
@@ -278,7 +283,7 @@ export default function AdminSales() {
                   <div className="font-mono text-[10px] text-[#6B5E42]">{s.sale_date}</div>
                 </div>
                 <div className="font-mono text-sm text-[#D4AF6A]">
-                  ${Number(s.amount).toFixed(2)}
+                  ${Number(s.subtotal).toFixed(2)}
                 </div>
               </div>
             ))}
