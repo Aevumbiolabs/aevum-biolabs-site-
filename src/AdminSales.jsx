@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient';
 
 const PERSONAL_RATE = 0.15;
 const OVERRIDE_RATE = 0.05;
+const RECRUITING_THRESHOLD = 1000;
 
 export default function AdminSales() {
   const [checkingAccess, setCheckingAccess] = useState(true);
@@ -55,7 +56,7 @@ export default function AdminSales() {
   async function loadAffiliates() {
     const { data } = await supabase
       .from('affiliates')
-      .select('id, full_name, email, referral_code, sponsor_id')
+      .select('id, full_name, email, referral_code, sponsor_id, can_recruit')
       .order('full_name', { ascending: true });
     if (data) setAffiliates(data);
   }
@@ -152,10 +153,30 @@ export default function AdminSales() {
         }
       }
 
+      // 4. Auto-unlock recruiting once this affiliate crosses $1,000 in personal sales
+      if (soldByAffiliate && !soldByAffiliate.can_recruit) {
+        const { data: allSales } = await supabase
+          .from('sales')
+          .select('subtotal')
+          .eq('affiliate_id', affiliateId);
+
+        const totalPersonalSales = (allSales || []).reduce(
+          (sum, s) => sum + Number(s.subtotal), 0
+        );
+
+        if (totalPersonalSales >= RECRUITING_THRESHOLD) {
+          await supabase
+            .from('affiliates')
+            .update({ can_recruit: true })
+            .eq('id', affiliateId);
+        }
+      }
+
       setSuccess(`Sale of $${numericAmount.toFixed(2)} logged for ${affiliateName(affiliateId)}.`);
       setAmount('');
       setAffiliateId('');
       loadRecentSales();
+      loadAffiliates();
     } catch (err) {
       setError('Something went wrong. Please try again.');
     }
